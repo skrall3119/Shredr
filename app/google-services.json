@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "565143318890",
+    "firebase_url": "https://jamr-7f77c.firebaseio.com",
+    "project_id": "jamr-7f77c",
+    "storage_bucket": "jamr-7f77c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:565143318890:android:a1a4f25e3b117cc2f83513",
+        "android_client_info": {
+          "package_name": "com.alexjanci.jamr"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "565143318890-g8ptlt22htcqh2bni4tae0cb766cn0ng.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.alexjanci.jamr",
+            "certificate_hash": "688038e94f4038b59868e72378eb7d4fd423cd1b"
+          }
+        },
+        {
+          "client_id": "565143318890-f00j044masg5gnutukj1gm1voov8bs6m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAN4j1KoVasHPq-r9asqjTCPN_YTyeQ8e8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "565143318890-f00j044masg5gnutukj1gm1voov8bs6m.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
