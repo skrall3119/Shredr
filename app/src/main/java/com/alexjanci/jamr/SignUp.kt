@@ -15,8 +15,8 @@ import kotlinx.android.synthetic.main.fragment_sign_up.*
 
 class SignUp : AppCompatActivity() {
 
-    override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
-        super.onCreate(savedInstanceState, persistentState)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
         setContentView(R.layout.fragment_sign_up)
 
         val fAuth = FirebaseAuth.getInstance()
@@ -27,9 +27,9 @@ class SignUp : AppCompatActivity() {
         }
 
         registerButton.setOnClickListener {
-            val email:String = editTextRegEmail.text.toString()
-            val password:String = editTextPassword.text.toString()
-            val confirmPass: String = editTextConfirmPassword.text.toString()
+            val email:String = editTextRegEmail.text.toString().trim()
+            val password:String = editTextPassword.text.toString().trim()
+            val confirmPass: String = editTextConfirmPassword.text.toString().trim()
 
             if (TextUtils.isEmpty(email)){
                 editTextRegEmail.error = "Email is required"
@@ -48,12 +48,12 @@ class SignUp : AppCompatActivity() {
             }
 
             else {
-                fAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener {
-                    if(it.isSuccessful){
+                fAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(this) {task ->
+                    if(task.isSuccessful){
                         Toast.makeText(this, "User Created.", Toast.LENGTH_SHORT).show()
                         startActivity(Intent(this, MainActivity::class.java))
                     } else {
-                        Toast.makeText(this, "Error has occured", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Error! " + task.exception!!.message.toString(), Toast.LENGTH_LONG).show()
                     }
                 }
             }
