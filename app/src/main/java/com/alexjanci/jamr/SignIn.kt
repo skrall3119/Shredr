@@ -18,6 +18,7 @@ import kotlinx.android.synthetic.main.fragment_sign_up.*
 
 class SignIn : AppCompatActivity() {
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.fragment_sign_in)

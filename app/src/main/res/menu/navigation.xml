@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/navigation_profile"
+        android:icon="@drawable/outline_account_box_black_18dp"
+        android:title="@string/my_profile"/>
+
+    <item
+        android:id="@+id/navigation_main"
+        android:icon="@drawable/outline_people_outline_black_18dp"
+        android:title="@string/discover"/>
+
+    <item
+        android:id="@+id/navigation_messages"
+        android:icon="@drawable/outline_message_black_18dp"
+        android:title="@string/messages"/>
+
+</menu>

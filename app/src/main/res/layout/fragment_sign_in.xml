@@ -8,10 +8,13 @@
 
     <Button
         android:id="@+id/buttonSignIn"
+        style="@style/Widget.AppCompat.Button"
         android:layout_width="196dp"
         android:layout_height="0dp"
         android:layout_marginBottom="204dp"
+        android:fontFamily="sans-serif-condensed-light"
         android:text="@string/sign_in"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.497"
@@ -23,7 +26,9 @@
         android:layout_height="47dp"
         android:layout_marginTop="14dp"
         android:layout_marginBottom="144dp"
+        android:fontFamily="sans-serif-condensed-light"
         android:text="@string/sign_up"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.497"

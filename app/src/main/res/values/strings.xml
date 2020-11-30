@@ -4,7 +4,6 @@
     <string name="sign_up">Sign Up</string>
     <string name="password">Password</string>
     <string name="user_email_com">user@email.com</string>
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="last_name">Last Name</string>
     <string name="sign_up_for_jamr">Sign Up For Jamr</string>
@@ -12,4 +11,14 @@
     <string name="email_address">Email Address</string>
     <string name="confirm_password">Confirm Password</string>
     <string name="birth_date">Birth Date</string>
+    <string name="full_name">Full Name</string>
+    <string name="enter_a_bio_here">Enter a bio here!</string>
+    <string name="age">age</string>
+    <string name="skill_level">Skill Level</string>
+    <string name="hello_world">hello world</string>
+    <string name="my_profile">My Profile</string>
+    <string name="discover">Discover</string>
+    <string name="messages">Messages</string>
+    <string name="logout">Logout</string>
+    <string name="save_changes">Save Changes</string>
 </resources>
