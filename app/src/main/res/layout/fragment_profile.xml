@@ -41,7 +41,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/profileAge" />
+        app:layout_constraintTop_toBottomOf="@+id/profileCity" />
 
     <EditText
         android:id="@+id/bioText"
@@ -61,18 +61,17 @@
         android:scrollbars="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/profileEmail"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintVertical_bias="0.139" />
 
     <TextView
-        android:id="@+id/profileAge"
+        android:id="@+id/profileCity"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:fontFamily="sans-serif-black"
-        android:text="@string/age"
+        android:text="@string/city"
         android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
@@ -87,18 +86,22 @@
         android:text="@string/save_changes"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/bioText" />
+        app:layout_constraintTop_toBottomOf="@+id/bioText"
+        app:layout_constraintVertical_bias="0.0" />
 
     <Button
         android:id="@+id/logout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
         android:text="@string/logout"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/buttonSave" />
+        app:layout_constraintTop_toBottomOf="@+id/buttonSave"
+        app:layout_constraintVertical_bias="0.173" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

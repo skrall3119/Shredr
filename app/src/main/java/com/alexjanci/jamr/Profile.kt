@@ -53,9 +53,10 @@ class Profile : Fragment() {
         userID = auth.currentUser!!.uid
 
         documentReference= store.collection("users").document(userID)
-        updateProfileListener = documentReference.addSnapshotListener { snapshot, e ->
+        updateProfileListener = documentReference.addSnapshotListener { snapshot, _ ->
             try {
-                profileName.text = snapshot!!.getString("fName")
+                profileCity.text = snapshot!!.getString("city")
+                profileName.text = snapshot.getString("fName")
                 profileEmail.text = snapshot.getString("email")
                 bioText.setText(snapshot.getString("bio"))
             }
@@ -104,7 +105,6 @@ class Profile : Fragment() {
     override fun onStop() {
         super.onStop()
         updateProfileListener.remove()
-        requireActivity().finish()
     }
 
     private fun uploadImageToFirebase(imageUri: Uri){

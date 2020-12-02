@@ -66,6 +66,7 @@ class SignUp : AppCompatActivity() {
             val password:String = editTextPassword.text.toString().trim()
             val confirmPass: String = editTextConfirmPassword.text.toString().trim()
             val name: String = editTextName.text.toString().trim()
+            val age = editTextDate.text.toString()
 
             if (TextUtils.isEmpty(email)){
                 editTextRegEmail.error = "Email is required"

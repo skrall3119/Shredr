@@ -1,34 +1,40 @@
 package com.alexjanci.jamr
 
-import android.content.Intent
+import android.annotation.SuppressLint
+import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Address
+import android.location.Geocoder
+import android.location.Location
 import android.location.LocationManager
-import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.View
+import android.os.Looper
+import android.util.Log
+import android.widget.Toast
 import androidx.appcompat.app.ActionBar
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.replace
-import com.google.android.material.bottomappbar.BottomAppBar
+import com.google.android.gms.location.*
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.DocumentReference
-import com.google.firebase.firestore.EventListener
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.android.synthetic.main.activity_main.*
-import java.util.jar.Manifest
+import java.util.*
+
 
 class MainActivity : AppCompatActivity() {
 
     lateinit var toolbar: ActionBar
-    lateinit var locationManager: LocationManager
-    private var hasGps = false
-    private var hasNetwork = false
-    private val PERMISSION_REQUEST = 10
+    lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    lateinit var locationRequest: LocationRequest
 
-    private var permissions = arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION)
+    private val PERMISSION_REQUEST = 1000
+
+    val auth = FirebaseAuth.getInstance()
+    val store = FirebaseFirestore.getInstance()
+
 
     private val mOnNavigationItemSelectedListener = BottomNavigationView.OnNavigationItemSelectedListener { item ->
         when(item.itemId){
@@ -62,14 +68,103 @@ class MainActivity : AppCompatActivity() {
         val bottomNavigation: BottomNavigationView = findViewById(R.id.navigation_view)
         bottomNavigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
 
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
+        getLastLocation()
+    }
 
+    private fun getLastLocation(){
+        if(checkPermission()){
+            if(isLocationEnabled()){
+                fusedLocationProviderClient.lastLocation.addOnCompleteListener {
+                    val location = it.result
+                    if(location == null){
+                        getNewLocation()
+                    } else {
+                        saveLocationToDatabase(location)
+                    }
+                }
+            } else {
+                Toast.makeText(this, "Please enable your location service", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            requestPermissions()
+        }
+    }
 
+    @SuppressLint("MissingPermission")
+    private fun getNewLocation(){
+        locationRequest = LocationRequest()
+        locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        locationRequest.interval = 0
+        locationRequest.fastestInterval = 0
+        locationRequest.numUpdates = 2
+        fusedLocationProviderClient.requestLocationUpdates(
+            locationRequest, locationCallback, Looper.myLooper()
+        )
+
+    }
+
+    private val locationCallback = object: LocationCallback(){
+        override fun onLocationResult(p0: LocationResult?) {
+            val lastLocation = p0!!.lastLocation
+            saveLocationToDatabase(lastLocation)
+        }
+    }
+
+    private fun saveLocationToDatabase(location: Location){
+        val firebaseUser = auth.currentUser!!
+        val geocoder = Geocoder(this, Locale.getDefault())
+
+        val lat = location.latitude
+        val long = location.longitude
+
+        val addresses: List<Address> = geocoder.getFromLocation(lat, long, 1)
+        val cityName: String = addresses.get(0).locality
+
+        val data = hashMapOf("latitude" to lat, "longitude" to long, "city" to cityName)
+        val docRef = store.collection("users").document(firebaseUser.uid)
+        docRef.set(data, SetOptions.merge())
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        if(requestCode == PERMISSION_REQUEST){
+            if(grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                Log.d("Debug", "Permissions allowed")
+            }
+        }
+    }
+
+    private fun isLocationEnabled(): Boolean{
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || locationManager.isProviderEnabled(
+            LocationManager.NETWORK_PROVIDER
+        )
+    }
+
+    private fun requestPermissions(){
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION
+            ), PERMISSION_REQUEST
+        )
     }
 
     private fun checkPermission(): Boolean{
         if(
-            ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-            ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            ActivityCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED ||
+            ActivityCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
         ){
             return true
         }
