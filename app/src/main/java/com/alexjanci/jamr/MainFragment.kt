@@ -1,6 +1,6 @@
 package com.alexjanci.jamr
 
-import android.content.Context
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -10,17 +10,12 @@ import android.view.ViewGroup
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
-import android.widget.ArrayAdapter
-import android.widget.TextView
 import androidx.recyclerview.widget.DefaultItemAnimator
-import androidx.recyclerview.widget.DiffUtil
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.ktx.storage
 import com.yuyakaido.android.cardstackview.*
 import kotlinx.android.synthetic.main.fragment_main.*
-import kotlinx.android.synthetic.main.fragment_main.view.*
 import kotlinx.android.synthetic.main.item.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.Main
@@ -28,17 +23,18 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.lang.Exception
 import java.lang.IllegalStateException
 
 class MainFragment : Fragment(), CardStackListener {
 
     private val manager by lazy { CardStackLayoutManager(context, this) }
     private lateinit var adapter: CardStackAdapter
-    val users = ArrayList<User>()
+    private val users = ArrayList<User>()
 
-    val auth = FirebaseAuth.getInstance()
-    val store = FirebaseFirestore.getInstance()
-    val documentReference= store.collection("users")
+    private val store = FirebaseFirestore.getInstance()
+    private val documentReference= store.collection("users")
+    private val storageRef = Firebase.storage.reference
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -149,15 +145,40 @@ class MainFragment : Fragment(), CardStackListener {
 
     private fun createList(){
         GlobalScope.launch(Dispatchers.IO) {
+
+            val defaultRef = storageRef.child("users/default/default.png")
             val documents = documentReference.get().await()
             for(document in documents){
+                val userID = document.id
+                var uri: Uri
+                val profileRef = storageRef.child("users/$userID/profile.jpg")
+
+                try {
+                    uri = profileRef.downloadUrl.await()
+                } catch (e: Exception) {
+                    Log.e("Exception", "$e")
+                    uri = defaultRef.downloadUrl.await()
+                }
                 val name = document.data.getValue("fName").toString()
                 val city = document.data.getValue("city").toString()
                 val age = document.data.getValue("age").toString()
-                users.add(User(name = name, city = city, age = age))
+                users.add(User(name = name, city = city, age = age, pic = uri))
             }
             withContext(Main){
-                initialize(users)
+                try {
+                    if (childFragmentManager.isDestroyed) {
+                        Log.e("Status", "is destroyed")
+
+                    } else {
+                        try {
+                            initialize(users)
+                        } catch (e: Exception) {
+                            Log.e("error: ", e.toString())
+                        }
+                    }
+                } catch (e: Exception){
+                    Log.e("error: ", e.toString())
+                }
             }
         }
 

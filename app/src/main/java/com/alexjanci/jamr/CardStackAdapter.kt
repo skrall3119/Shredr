@@ -7,6 +7,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
+import com.squareup.picasso.Picasso
 
 class CardStackAdapter(
     private var users: List<User> = emptyList()
@@ -19,8 +20,10 @@ class CardStackAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val user = users[position]
-        holder.name.text = user.name
+        val nameText = "${user.name}, ${user.age}"
+        holder.name.text = nameText
         holder.city.text = user.city
+        Picasso.get().load(user.pic).into(holder.image)
         holder.itemView.setOnClickListener { v ->
             Toast.makeText(v.context, user.name, Toast.LENGTH_SHORT).show()
         }
@@ -28,14 +31,6 @@ class CardStackAdapter(
 
     override fun getItemCount(): Int {
         return users.size
-    }
-
-    fun setSpots(spots: List<User>) {
-        this.users = spots
-    }
-
-    fun getSpots(): List<User> {
-        return users
     }
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {

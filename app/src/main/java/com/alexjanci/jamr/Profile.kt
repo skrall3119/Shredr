@@ -6,20 +6,24 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.fragment.app.Fragment
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.*
+import com.google.firebase.firestore.DocumentReference
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.StorageReference
 import com.google.firebase.storage.ktx.storage
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.fragment_profile.*
-import java.lang.NullPointerException
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 class Profile : Fragment() {
 
@@ -30,7 +34,6 @@ class Profile : Fragment() {
     private lateinit var storageRef: StorageReference
     private lateinit var documentReference: DocumentReference
     private lateinit var updateProfileListener: ListenerRegistration
-
 
 
     override fun onCreateView(
@@ -49,29 +52,40 @@ class Profile : Fragment() {
         store = FirebaseFirestore.getInstance()
         storageRef = Firebase.storage.reference
 
-
         userID = auth.currentUser!!.uid
 
-        documentReference= store.collection("users").document(userID)
+        documentReference = store.collection("users").document(userID)
         updateProfileListener = documentReference.addSnapshotListener { snapshot, _ ->
             try {
                 profileCity.text = snapshot!!.getString("city")
                 profileName.text = snapshot.getString("fName")
                 profileEmail.text = snapshot.getString("email")
                 bioText.setText(snapshot.getString("bio"))
-            }
-            catch (e: NullPointerException){
+            } catch (e: NullPointerException) {
                 Log.e("Exception", e.toString())
             }
         }
 
         val profileRef = storageRef.child("users/$userID/profile.jpg")
         profileRef.downloadUrl.addOnSuccessListener {
-            Picasso.get().load(it).into(profilePic)
+            try {
+                Picasso.get().load(it).into(profilePic)
+            } catch (e: Exception) {
+                Log.e("error", "$e")
+                val uri = Uri.parse("android.resource://com.alexjanci.jamr/drawable/defaultpic")
+                GlobalScope.launch {
+                    profilePic.setImageResource(R.drawable.defaultpic)
+                    uploadImageToFirebase(uri)
+                }
+            }
+
         }
 
         profilePic.setOnClickListener {
-            val openGalleryIntnet = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+            val openGalleryIntnet = Intent(
+                Intent.ACTION_PICK,
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+            )
             startActivityForResult(openGalleryIntnet, 1000)
 
         }
@@ -87,15 +101,21 @@ class Profile : Fragment() {
 
         logout.setOnClickListener {
             FirebaseAuth.getInstance().signOut()
-            startActivity(Intent(context, SignIn::class.java))
+            val intent = Intent(context, SignIn::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK.or(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
         }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 1000) {
-            if(resultCode == Activity.RESULT_OK){
+            if (resultCode == Activity.RESULT_OK) {
                 val imageUri = data!!.data
+
+                val ref = store.collection("users").document(userID)
+                val data = hashMapOf(imageUri.toString() to "uri")
+                ref.set(data, SetOptions.merge())
 
                 uploadImageToFirebase(imageUri!!)
             }
@@ -107,16 +127,17 @@ class Profile : Fragment() {
         updateProfileListener.remove()
     }
 
-    private fun uploadImageToFirebase(imageUri: Uri){
+    private fun uploadImageToFirebase(imageUri: Uri) {
         val fileRef = storageRef.child("users/$userID/profile.jpg")
         fileRef.putFile(imageUri).addOnSuccessListener {
             fileRef.downloadUrl.addOnSuccessListener {
                 Picasso.get().load(it).into(profilePic)
             }
         }.addOnFailureListener {
-            Toast.makeText(context,"Failed", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Failed", Toast.LENGTH_SHORT).show()
         }
     }
+
 
     companion object {
         fun newInstance(): Profile = Profile()
