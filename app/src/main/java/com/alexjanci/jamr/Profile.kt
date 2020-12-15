@@ -40,9 +40,7 @@ class Profile : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_profile, container, false)
-
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -58,11 +56,10 @@ class Profile : Fragment() {
         updateProfileListener = documentReference.addSnapshotListener { snapshot, _ ->
             try {
                 profileCity.text = snapshot!!.getString("city")
-                profileName.text = snapshot.getString("fName")
+                profileName.text = snapshot.getString("fname")
                 profileEmail.text = snapshot.getString("email")
                 bioText.setText(snapshot.getString("bio"))
             } catch (e: NullPointerException) {
-                Log.e("Exception", e.toString())
             }
         }
 
@@ -71,7 +68,6 @@ class Profile : Fragment() {
             try {
                 Picasso.get().load(it).into(profilePic)
             } catch (e: Exception) {
-                Log.e("error", "$e")
                 val uri = Uri.parse("android.resource://com.alexjanci.jamr/drawable/defaultpic")
                 GlobalScope.launch {
                     profilePic.setImageResource(R.drawable.defaultpic)
@@ -114,8 +110,8 @@ class Profile : Fragment() {
                 val imageUri = data!!.data
 
                 val ref = store.collection("users").document(userID)
-                val data = hashMapOf(imageUri.toString() to "uri")
-                ref.set(data, SetOptions.merge())
+                val uriData = hashMapOf(imageUri.toString() to "uri")
+                ref.set(uriData, SetOptions.merge())
 
                 uploadImageToFirebase(imageUri!!)
             }

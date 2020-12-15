@@ -20,12 +20,12 @@ class CardStackAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val user = users[position]
-        val nameText = "${user.name}, ${user.age}"
+        val nameText = "${user.fname}, ${user.age}"
         holder.name.text = nameText
         holder.city.text = user.city
         Picasso.get().load(user.pic).into(holder.image)
         holder.itemView.setOnClickListener { v ->
-            Toast.makeText(v.context, user.name, Toast.LENGTH_SHORT).show()
+            Toast.makeText(v.context, user.fname, Toast.LENGTH_SHORT).show()
         }
     }
 

@@ -8,7 +8,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.InputType
 import android.text.TextUtils
-import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
@@ -20,8 +19,11 @@ import com.google.common.primitives.UnsignedBytes.toInt
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.ktx.storage
+import com.squareup.picasso.Picasso
 import com.yuyakaido.android.cardstackview.CardStackLayoutManager
+import kotlinx.android.synthetic.main.fragment_profile.*
 import kotlinx.android.synthetic.main.fragment_sign_up.*
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -52,18 +54,16 @@ class SignUp : AppCompatActivity() {
                 editTextDate.hideKeyboard()
 
                 val c = Calendar.getInstance()
-                val year = c.get(Calendar.YEAR)
-                val month = c.get(Calendar.MONTH)
+                val curYear = c.get(Calendar.YEAR)
+                val curMonth = c.get(Calendar.MONTH)
                 val day = c.get(Calendar.DAY_OF_MONTH)
-                var birthyear = 0
 
                 val dpd = DatePickerDialog(this, { view, year, month, dayOfMonth ->
-                    val text = "" + dayOfMonth + "" + month + "" + year
+                    val text = "" + dayOfMonth + "" + (month + 1) + "" + year
                     editTextDate.setText(text)
-                    birthyear = year
-                }, year, month, day)
+                    age = curYear - year
+                }, curYear, curMonth, day)
                 dpd.show()
-                age = c.get(Calendar.YEAR) - birthyear
             }
         }
 
@@ -104,11 +104,12 @@ class SignUp : AppCompatActivity() {
                         userID = fAuth.currentUser!!.uid
                         val documentReference = fStore.collection("users").document(userID)
                         val user = hashMapOf<String, String>()
-                        user.put("fName", name)
+                        user.put("fname", name)
                         user.put("email",email)
                         user.put("age", age.toString())
+                        user.put("id", userID)
+                        uploadDefaultImageToFirebase()
                         documentReference.set(user).addOnSuccessListener {
-                            Log.d("Finish", "onSucess: Profile created for "+userID)
                         }
                         val intent = Intent(this, MainActivity::class.java)
                         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK.or(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -122,9 +123,14 @@ class SignUp : AppCompatActivity() {
         }
     }
 
-    private fun saveUserToFirebaseDatabase(user: User){
-        val ref = FirebaseFirestore.getInstance().collection("users").document(userID)
-        ref.set(user)
+    private fun uploadDefaultImageToFirebase() {
+        val storageRef = Firebase.storage.reference
+        val fileRef = storageRef.child("users/$userID/profile.jpg")
+        val uri = Uri.parse("android.resource://com.alexjanci.jamr/drawable/defaultpic")
+        fileRef.putFile(uri).addOnSuccessListener {
+        }.addOnFailureListener {
+            Toast.makeText(this, "Failed", Toast.LENGTH_SHORT).show()
+        }
     }
 
     fun EditText.hideKeyboard(){

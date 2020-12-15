@@ -17,6 +17,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.replace
 import com.google.android.gms.location.*
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
@@ -69,6 +70,15 @@ class MainActivity : AppCompatActivity() {
         toolbar = supportActionBar!!
         val bottomNavigation: BottomNavigationView = navigation_view
         bottomNavigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
+
+        val transaction = supportFragmentManager.beginTransaction()
+        val defaultFragment = MainFragment.newInstance()
+
+        toolbar.title = "Discover"
+
+        transaction.replace(R.id.container, defaultFragment);
+        transaction.addToBackStack(null);
+        transaction.commit()
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
         getLastLocation()
@@ -145,7 +155,6 @@ class MainActivity : AppCompatActivity() {
     ) {
         if(requestCode == PERMISSION_REQUEST){
             if(grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                Log.d("Debug", "Permissions allowed")
             }
         }
     }
@@ -180,7 +189,7 @@ class MainActivity : AppCompatActivity() {
         return false
     }
 
-    private fun openFragment(fragment: Fragment){
+    fun openFragment(fragment: Fragment){
         val transaction = supportFragmentManager.beginTransaction()
         transaction.replace(container.id, fragment)
         transaction.commit()

@@ -3,10 +3,10 @@ package com.alexjanci.jamr
 import android.net.Uri
 
 data class User(
-    val name: String = "name",
+    val fname: String = "name",
     val city: String = "city",
     val age: String = "age",
     val bio: String = "bio",
-    val uid: String = "id",
-    val pic: Uri
+    val id: String = "id",
+    val pic: String = "android.resource://com.alexjanci.jamr/drawable/defaultpic"
 )

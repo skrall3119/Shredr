@@ -11,7 +11,9 @@ import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
 import androidx.recyclerview.widget.DefaultItemAnimator
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import com.yuyakaido.android.cardstackview.*
@@ -31,10 +33,14 @@ class MainFragment : Fragment(), CardStackListener {
     private val manager by lazy { CardStackLayoutManager(context, this) }
     private lateinit var adapter: CardStackAdapter
     private val users = ArrayList<User>()
+    private lateinit var userMe: User
 
     private val store = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
     private val documentReference= store.collection("users")
     private val storageRef = Firebase.storage.reference
+    private val myRef = store.collection("users").document(auth.uid!!)
+    private val likesRef = store.collection("user-likes").document(auth.uid!!)
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -48,6 +54,11 @@ class MainFragment : Fragment(), CardStackListener {
         super.onStart()
         createList()
         setupButton()
+
+        val user = myRef.get()
+        user.addOnSuccessListener {
+            userMe = it.toObject(User::class.java)!!
+        }
     }
 
     private fun initialize(list: List<User>){
@@ -78,32 +89,42 @@ class MainFragment : Fragment(), CardStackListener {
     }
 
     override fun onCardDragging(direction: Direction, ratio: Float) {
-        Log.d("CardStackView", "onCardDragging: d = ${direction.name}, r = $ratio")
     }
 
     override fun onCardSwiped(direction: Direction) {
-        Log.d("CardStackView", "onCardSwiped: p = ${manager.topPosition}, d = $direction")
+        if(direction == Direction.Right){
+            val likedID = users[manager.topPosition - 1].id
+            val data = hashMapOf(likedID to likedID)
+            likesRef.set(data, SetOptions.merge()).addOnSuccessListener {
+                val likedRef = store.collection("user-likes").document(likedID).get().addOnSuccessListener {
+                    if (it.data != null && it.data!!.contains("${auth.uid}")){
+                        val matchedRef = store.collection("user-matches").document("${auth.uid}").collection("matches").document(likedID)
+                        val matchedRef2 = store.collection("user-matches").document(likedID).collection("matches").document("${auth.uid}")
+
+                        val matchedUser = users[manager.topPosition - 1]
+
+                        matchedRef.set(matchedUser)
+                        matchedRef2.set(userMe)
+                    }
+                }
+            }
+        }
     }
 
     override fun onCardRewound() {
-        Log.d("CardStackView", "onCardRewound: ${manager.topPosition}")
     }
 
     override fun onCardCanceled() {
-        Log.d("CardStackView", "onCardCanceled: ${manager.topPosition}")
     }
 
     override fun onCardAppeared(view: View?, position: Int) {
-        Log.d("CardStackView", "onCardAppeared: ($position) ${item_name!!.text}")
     }
 
     override fun onCardDisappeared(view: View?, position: Int) {
         val textView = item_name
         try {
-            Log.d("CardStackView", "onCardDisappeared: ($position) ${textView.text}")
         }
         catch (e: IllegalStateException){
-            Log.d("Exception!: ", "$e")
         }
     }
 
@@ -148,36 +169,36 @@ class MainFragment : Fragment(), CardStackListener {
 
             val defaultRef = storageRef.child("users/default/default.png")
             val documents = documentReference.get().await()
+            val likes = likesRef.get().await()
             for(document in documents){
                 val userID = document.id
-                var uri: Uri
-                val profileRef = storageRef.child("users/$userID/profile.jpg")
+                if (userID != auth.currentUser!!.uid) {
+                    if(document.id != likes[userID]){
+                        var uri: Uri
+                        val profileRef = storageRef.child("users/$userID/profile.jpg")
 
-                try {
-                    uri = profileRef.downloadUrl.await()
-                } catch (e: Exception) {
-                    Log.e("Exception", "$e")
-                    uri = defaultRef.downloadUrl.await()
+                        try {
+                            uri = profileRef.downloadUrl.await()
+                        } catch (e: Exception) {
+                            uri = defaultRef.downloadUrl.await()
+                        }
+                        val name = document.data.getValue("fname").toString()
+                        val city = document.data.getValue("city").toString()
+                        val age = document.data.getValue("age").toString()
+                        users.add(User(fname = name, city = city, age = age, pic = uri.toString(), id = userID))
+                    }
                 }
-                val name = document.data.getValue("fName").toString()
-                val city = document.data.getValue("city").toString()
-                val age = document.data.getValue("age").toString()
-                users.add(User(name = name, city = city, age = age, pic = uri))
             }
             withContext(Main){
                 try {
                     if (childFragmentManager.isDestroyed) {
-                        Log.e("Status", "is destroyed")
-
                     } else {
                         try {
                             initialize(users)
                         } catch (e: Exception) {
-                            Log.e("error: ", e.toString())
                         }
                     }
                 } catch (e: Exception){
-                    Log.e("error: ", e.toString())
                 }
             }
         }
