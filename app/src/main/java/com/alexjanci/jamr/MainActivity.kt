@@ -151,7 +151,7 @@ class MainActivity : AppCompatActivity() {
             if (city.isNullOrBlank()) return@Thread
             runOnUiThread {
                 if (!isFinishing && auth.uid == uid) {
-                    store.collection("users").document(uid).set(mapOf("city" to city), SetOptions.merge())
+                    store.collection("public-profiles").document(uid).set(mapOf("city" to city), SetOptions.merge())
                         .addOnFailureListener { Log.w("Shredr", "Could not save city", it) }
                 }
             }

@@ -51,7 +51,9 @@ Captured from the running Android app on an API 30 emulator. Profiles, artwork, 
 
 A right swipe records a like for the selected profile. The app then checks whether that person has already liked the current user. A reciprocal like creates a match record under each user's account.
 
-The data model uses Firestore collections for `users`, `user-likes`, `user-matches`, and `user-messages`. Profile images are stored separately at `users/{uid}/profile.jpg`.
+Discoverable profile fields live in `public-profiles`; email stays in Firebase Authentication. Legacy `users` records are owner-only. Individual likes live at `user-likes/{uid}/likes/{otherUid}`. Matches and messages use `user-matches` and `user-messages`. Profile images are stored at `users/{uid}/profile.jpg`.
+
+Versioned [Firestore rules](firestore.rules) and [Storage rules](storage.rules) enforce profile ownership, private likes, mutual matching, sender identity, and photo upload limits. See [security and release notes](SECURITY.md) for the access model and tests.
 
 ### Code worth exploring
 
@@ -63,11 +65,28 @@ The data model uses Firestore collections for `users`, `user-likes`, `user-match
 
 ## Getting started
 
-Open Shredr and choose **Create an account** on the sign-in screen. Register with your email and password, then sign in, add a profile photo and bio, and start discovering other musicians.
+### Get the Android app
+
+[Download Shredr 1.1.0 for Android](https://github.com/skrall3119/Shredr/releases/download/v1.1.0/Shredr-1.1.0.apk), or open the [preview release](https://github.com/skrall3119/Shredr/releases/tag/v1.1.0) for release notes and its SHA-256 checksum. This is a portfolio preview, not a production service.
+
+1. Open the release on your Android phone and expand **Assets**.
+2. Download the file ending in `.apk`. The **Source code** ZIP and TAR files are for developers and cannot be installed as an app.
+3. Open the downloaded APK and follow Android's installation prompts. If prompted, allow your browser or file manager to install this app; you can turn that permission off afterward.
+4. Open Shredr, choose **Create an account**, and register with your email and password.
+5. Add a profile photo and bio, then start discovering other musicians.
+
+Shredr requires Android 8.0 (API 26) or later and an internet connection for its online features. It has been tested on an Android 11 (API 30) emulator; other Android versions have not been verified. There is no iOS build.
 
 The app already connects to its configured Firebase backend. You do not need to create a Firebase project, connect a Firebase account, or replace any configuration files to try it.
 
-If you are running from source, clone this repository, open it in Android Studio, and build and run it on an Android device or emulator supporting API 26 or later. The debug build has been verified with JDK 11 and an API 30 emulator. The project uses Kotlin 1.3.72, Android Gradle Plugin 4.1.0, and compile/target SDK 30, so use a compatible Gradle/JDK environment.
+If you previously installed a development build, its signing key may differ. Android will require you to uninstall that build before installing this release, which removes its local app data. Your Firebase account remains available to sign in again.
+
+### Build from source
+
+1. Clone this repository and open it in Android Studio.
+2. Configure a compatible Gradle/JDK environment. The project uses Kotlin 1.3.72, Android Gradle Plugin 4.1.0, and compile/target SDK 30; the debug build has been verified with JDK 11.
+3. Select an Android device or emulator supporting API 26 or later and run the `app` configuration.
+4. Register directly in the app using **Create an account**.
 
 ## Suggested demo
 
@@ -82,7 +101,7 @@ Priorities for continued development:
 - Migrate synthetic view access and older build dependencies.
 - Improve loading, empty, and failure states, and remove unsafe null assumptions.
 - Add offline recovery and retry coverage beyond the current atomic match/message writes.
-- Harden and version-control backend security rules before public release. Live Firebase tests are opt-in and use disposable fixtures.
+- Add abuse prevention, reporting/blocking, and account deletion before a wider production launch. Live Firebase tests remain opt-in and use disposable fixtures.
 
 ## Author
 

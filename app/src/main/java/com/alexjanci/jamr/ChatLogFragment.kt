@@ -47,7 +47,7 @@ class ChatLogFragment : Fragment() {
         (activity as? androidx.appcompat.app.AppCompatActivity)?.supportActionBar?.title =
             arguments?.getString("name") ?: "Conversation"
         val ownId = auth.uid ?: return
-        FirebaseFirestore.getInstance().collection("users").document(ownId).get()
+        FirebaseFirestore.getInstance().collection("public-profiles").document(ownId).get()
             .addOnCompleteListener { task ->
                 if (view != null && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
                     val photo = if (task.isSuccessful) task.result?.getString("pic") else null
@@ -116,6 +116,10 @@ class ChatLogFragment : Fragment() {
         val draft = messageText.text.toString()
         val text = draft.trim()
         if (text.isBlank() || auth.uid == null) return
+        if (text.length > 4000) {
+            messageText.error = "Keep messages under 4,000 characters"
+            return
+        }
 
         val fromId = uid
         val toId = arguments?.getString("id")?.takeIf { it.isNotBlank() } ?: return

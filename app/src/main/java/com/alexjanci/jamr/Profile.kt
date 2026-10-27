@@ -36,8 +36,12 @@ class Profile : Fragment() {
         }
         buttonSave.setOnClickListener {
             val uid = auth.uid ?: return@setOnClickListener
+            if (bioText.text.length > 2000) {
+                bioText.error = "Keep your bio under 2,000 characters"
+                return@setOnClickListener
+            }
             buttonSave.isEnabled = false
-            store.collection("users").document(uid).set(mapOf("bio" to bioText.text.toString()), SetOptions.merge())
+            store.collection("public-profiles").document(uid).set(mapOf("bio" to bioText.text.toString()), SetOptions.merge())
                 .addOnCompleteListener { task ->
                     if (this.view == null) return@addOnCompleteListener
                     buttonSave.isEnabled = true
@@ -55,7 +59,7 @@ class Profile : Fragment() {
     override fun onStart() {
         super.onStart()
         val uid = auth.uid ?: return
-        listener = store.collection("users").document(uid).addSnapshotListener { snapshot, error ->
+        listener = store.collection("public-profiles").document(uid).addSnapshotListener { snapshot, error ->
             if (view == null) return@addSnapshotListener
             if (error != null || snapshot == null || !snapshot.exists()) {
                 showMessage("Profile could not load. Please check your connection or account access.")
@@ -63,7 +67,7 @@ class Profile : Fragment() {
             }
             profileCity.text = snapshot.getString("city").orEmpty()
             profileName.text = snapshot.getString("fname").orEmpty()
-            profileEmail.text = snapshot.getString("email") ?: auth.currentUser?.email.orEmpty()
+            profileEmail.text = auth.currentUser?.email.orEmpty()
             if (!loadedBio) {
                 bioText.setText(snapshot.getString("bio").orEmpty())
                 loadedBio = true
@@ -86,13 +90,30 @@ class Profile : Fragment() {
         val imageUri = data?.data ?: return
         val uid = auth.uid ?: return
         val file = FirebaseStorage.getInstance().getReference("users/$uid/profile.jpg")
+        val resolver = context?.contentResolver ?: return
+        val details = try {
+            Pair(resolver.getType(imageUri), resolver.openAssetFileDescriptor(imageUri, "r")?.use { it.length })
+        } catch (e: Exception) {
+            showMessage("Could not read this photo. Please choose it again.")
+            return
+        }
+        val mime = details.first
+        if (mime !in listOf("image/jpeg", "image/png", "image/webp")) {
+            showMessage("Choose a JPEG, PNG, or WebP photo")
+            return
+        }
+        val size = details.second
+        if (size != null && size > 5 * 1024 * 1024) {
+            showMessage("Choose a photo smaller than 5 MB")
+            return
+        }
         profilePic.isEnabled = false
-        file.putFile(imageUri).continueWithTask { upload ->
+        file.putFile(imageUri, com.google.firebase.storage.StorageMetadata.Builder().setContentType(mime).build()).continueWithTask { upload ->
             if (!upload.isSuccessful) throw upload.exception ?: IllegalStateException("Upload failed")
             file.downloadUrl
         }.continueWithTask { download ->
             val url = download.result ?: throw IllegalStateException("Photo URL unavailable")
-            store.collection("users").document(uid).set(mapOf("pic" to url.toString()), SetOptions.merge())
+            store.collection("public-profiles").document(uid).set(mapOf("pic" to url.toString()), SetOptions.merge())
         }.addOnCompleteListener { task ->
             if (view == null) return@addOnCompleteListener
             profilePic.isEnabled = true

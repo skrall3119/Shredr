@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function owner(uid) { return signedIn() && request.auth.uid == uid; }
+    function participant(a, b) { return signedIn() && request.auth.uid in [a, b] && a != b; }
+    function mutual(a, b) {
+      return exists(/databases/$(database)/documents/user-likes/$(a)/likes/$(b))
+        && exists(/databases/$(database)/documents/user-likes/$(b)/likes/$(a));
+    }
+    function matched(a, b) {
+      return mutual(a, b)
+        && exists(/databases/$(database)/documents/user-matches/$(a)/matches/$(b))
+        && exists(/databases/$(database)/documents/user-matches/$(b)/matches/$(a));
+    }
+    function shortString(data, field, max) {
+      return !(field in data) || (data[field] is string && data[field].size() <= max);
+    }
+    match /public-profiles/{uid} {
+      allow read: if signedIn();
+      allow create, update: if owner(uid)
+        && request.resource.data.keys().hasOnly(['id','fname','age','city','bio','pic','demoGroup'])
+        && request.resource.data.keys().hasAll(['id','fname'])
+        && request.resource.data.id == uid
+        && request.resource.data.fname is string
+        && request.resource.data.fname.size() > 0
+        && request.resource.data.fname.size() <= 100
+        && shortString(request.resource.data, 'age', 3)
+        && shortString(request.resource.data, 'city', 120)
+        && shortString(request.resource.data, 'bio', 2000)
+        && shortString(request.resource.data, 'pic', 2048)
+        && shortString(request.resource.data, 'demoGroup', 120);
+      allow delete: if owner(uid);
+    }
+    // Legacy documents may contain email or other private fields. Never discover them.
+    match /users/{uid} {
+      allow get, delete: if owner(uid);
+      allow list, create, update: if false;
+    }
+    // Legacy aggregate like maps are private and read-only during migration.
+    match /user-likes/{uid} {
+      allow get, delete: if owner(uid);
+      match /likes/{other} {
+        allow get: if participant(uid, other);
+        allow list: if owner(uid);
+        allow create: if owner(uid) && uid != other
+          && exists(/databases/$(database)/documents/public-profiles/$(uid))
+          && exists(/databases/$(database)/documents/public-profiles/$(other))
+          && request.resource.data.keys().hasOnly(['id'])
+          && request.resource.data.id == other;
+        allow update: if owner(uid) && request.resource.data == resource.data;
+        allow delete: if owner(uid);
+      }
+    }
+    function validMatch(other) {
+      let p = get(/databases/$(database)/documents/public-profiles/$(other)).data;
+      let d = request.resource.data;
+      return d.keys().hasOnly(['id','fname','age','city','bio','pic'])
+        && d.id == other && d.fname == p.get('fname', 'name')
+        && d.age == p.get('age', 'age') && d.city == p.get('city', 'city')
+        && d.bio == p.get('bio', 'bio')
+        && d.pic == p.get('pic', 'android.resource://com.alexjanci.jamr/drawable/defaultpic');
+    }
+    match /user-matches/{uid}/matches/{other} {
+      allow read, delete: if owner(uid);
+      allow create, update: if participant(uid, other) && mutual(uid, other)
+        && validMatch(other)
+        && getAfter(/databases/$(database)/documents/user-matches/$(other)/matches/$(uid)).data.id == uid;
+    }
+    match /user-messages/{uid}/{other}/{messageId} {
+      allow read: if owner(uid) && uid != other;
+      allow delete: if owner(uid);
+      allow create: if participant(uid, other) && matched(uid, other)
+        && request.resource.data.keys().hasOnly(['id','text','fromId','toId','timeStamp'])
+        && request.resource.data.id == messageId
+        && request.resource.data.fromId == request.auth.uid
+        && request.resource.data.toId in [uid, other]
+        && request.resource.data.toId != request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 4000
+        && request.resource.data.timeStamp is int
+        && request.resource.data.timeStamp >= request.time.toMillis() / 1000 - 300
+        && request.resource.data.timeStamp <= request.time.toMillis() / 1000 + 300
+        && getAfter(/databases/$(database)/documents/user-messages/$(other)/$(uid)/$(messageId)).data == request.resource.data;
+      // Sent messages are immutable. Owners can remove only their own copy.
+      allow update: if false;
+    }
+  }
+}

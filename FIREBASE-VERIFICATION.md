@@ -50,3 +50,16 @@ Verified October 27, 2026 in the API 30 emulator with three fictional demo accou
 Eight PNG captures in docs/screenshots show sign-in, registration, discovery, profile, connections, conversation, gallery, and bio editing. They are direct emulator captures, not layout previews. Demo art and the initial conversation were prepared as fixtures; the final reply was sent through the app. These are fictional demo data, not real user activity.
 
 Demo accounts remain available for review. Their generated passwords are stored outside this repository in the parent workspace's ignored .android-tools/demo/ACCOUNTS.txt file. No credentials are included in README captures or source. Demo profiles discover only profiles with the same demoGroup value; this is demo isolation, not an authorization boundary.
+
+## Security rules and Android preview release
+
+On October 27, 2026, Firestore and Storage rules were tightened and version-controlled. This supersedes the earlier broad authenticated-user rules described above.
+
+- Migrated 15 legacy profiles to public-profiles without email or other private fields, and 60 legacy likes to individual owner/target records. Original records and existing chats were retained. A private Cloud Shell backup preserves the previous rules and migration inputs.
+- Deployed Firestore ruleset 9bb79432-b618-495d-81c7-f7139d612ab3 and Storage ruleset 112ecfcb-76e7-4acb-b64c-0a32d1fddee3.
+- All eight local emulator security-test groups passed, including cross-account denials, mutual matching, mirrored messages, immutable sent messages, and upload ownership/type/size checks.
+- Both updated live Android tests passed (2 tests, no failures): authentication, profile persistence, matching, mirrored messages, photo upload/download, and server rejection of unauthorized access. Disposable fixtures were cleaned up.
+- Debug/release builds, release lint, and unit tests passed. The signed 1.1.0 APK has version code 2, minimum API 26, target API 30, and a verified APK v2 signature. Release builds are not debuggable.
+
+See SECURITY.md for the access model and remaining preview limitations, including shareable profile-photo URLs and absent abuse-prevention features.
+- The exact signed release APK was installed and launched successfully in a separate clean API 30 emulator. The sign-in screen rendered correctly and the crash log was empty.

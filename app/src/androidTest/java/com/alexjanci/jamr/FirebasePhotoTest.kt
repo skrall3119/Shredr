@@ -49,8 +49,8 @@ class FirebasePhotoTest {
             uploaded = true
             val url = wait(ref.downloadUrl).toString()
             assertTrue(url.startsWith("https://"))
-            wait(store.collection("users").document(uid).set(mapOf("id" to uid, "fname" to "Disposable photo test", "pic" to url)))
-            assertEquals(url, wait(store.collection("users").document(uid).get(Source.SERVER)).getString("pic"))
+            wait(store.collection("public-profiles").document(uid).set(mapOf("id" to uid, "fname" to "Disposable photo test", "pic" to url)))
+            assertEquals(url, wait(store.collection("public-profiles").document(uid).get(Source.SERVER)).getString("pic"))
             assertArrayEquals(file.readBytes(), wait(ref.getBytes(1024 * 1024)))
             val connection = java.net.URL(url).openConnection() as java.net.HttpURLConnection
             connection.connectTimeout = 15000
@@ -63,7 +63,7 @@ class FirebasePhotoTest {
             try {
                 uid?.let {
                     if (uploaded) wait(storage.getReference("users/$it/profile.jpg").delete())
-                    wait(store.collection("users").document(it).delete())
+                    wait(store.collection("public-profiles").document(it).delete())
                     auth.currentUser?.let { user -> wait(user.delete()) }
                 }
             } finally {

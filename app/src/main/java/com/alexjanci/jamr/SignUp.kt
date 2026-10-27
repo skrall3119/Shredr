@@ -79,6 +79,9 @@ class SignUp : AppCompatActivity() {
             if (name.isBlank()) {
                 editTextName.error = "Name is required"
             }
+            else if (name.length > 100) {
+                editTextName.error = "Keep your name under 100 characters"
+            }
             else if (TextUtils.isEmpty(email)){
                 editTextRegEmail.error = "Email is required"
             }
@@ -107,10 +110,9 @@ class SignUp : AppCompatActivity() {
                     if(task.isSuccessful){
                         Toast.makeText(this, "User Created.", Toast.LENGTH_SHORT).show()
                         userID = fAuth.currentUser!!.uid
-                        val documentReference = fStore.collection("users").document(userID)
+                        val documentReference = fStore.collection("public-profiles").document(userID)
                         val user = hashMapOf<String, String>()
                         user.put("fname", name)
-                        user.put("email",email)
                         user.put("age", age.toString())
                         user.put("id", userID)
 

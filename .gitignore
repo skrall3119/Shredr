@@ -12,3 +12,9 @@
 /captures
 .externalNativeBuild
 .cxx
+node_modules/
+*-debug.log
+.firebase/
+*.jks
+*.keystore
+keystore.properties

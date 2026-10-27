@@ -41,10 +41,10 @@ class MainFragment : Fragment(), CardStackListener {
 
     private val store = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
-    private val documentReference= store.collection("users")
+    private val documentReference= store.collection("public-profiles")
     private val storageRef = Firebase.storage.reference
-    private val myRef = store.collection("users").document(auth.uid!!)
-    private val likesRef = store.collection("user-likes").document(auth.uid!!)
+    private val myRef = store.collection("public-profiles").document(auth.uid!!)
+    private val likesRef = store.collection("user-likes").document(auth.uid!!).collection("likes")
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -102,17 +102,26 @@ class MainFragment : Fragment(), CardStackListener {
         if (direction != Direction.Right || !::userMe.isInitialized) return
         val uid = auth.uid ?: return
         val likedID = matchedUser.id
-        likesRef.set(mapOf(likedID to likedID), SetOptions.merge()).continueWithTask { saved ->
+        likesRef.document(likedID).set(mapOf("id" to likedID)).continueWithTask { saved ->
             if (!saved.isSuccessful) throw saved.exception ?: IllegalStateException("Like failed")
-            store.collection("user-likes").document(likedID).get()
+            store.collection("user-likes").document(likedID).collection("likes").document(uid).get()
         }.continueWithTask { liked ->
             val snapshot = liked.result ?: throw IllegalStateException("Like unavailable")
-            val batch = store.batch()
-            if (snapshot.contains(uid)) {
-                batch.set(store.collection("user-matches").document(uid).collection("matches").document(likedID), matchedUser)
-                batch.set(store.collection("user-matches").document(likedID).collection("matches").document(uid), userMe)
+            if (snapshot.exists()) {
+                // Read current canonical profiles; display fallbacks and stale cards
+                // must not be written into another person's match record.
+                store.runTransaction { transaction ->
+                    val own = transaction.get(documentReference.document(uid)).toObject(User::class.java)
+                        ?: throw IllegalStateException("Profile missing")
+                    val other = transaction.get(documentReference.document(likedID)).toObject(User::class.java)
+                        ?: throw IllegalStateException("Profile missing")
+                    transaction.set(store.collection("user-matches").document(uid).collection("matches").document(likedID), other)
+                    transaction.set(store.collection("user-matches").document(likedID).collection("matches").document(uid), own)
+                    true
+                }
+            } else {
+                com.google.android.gms.tasks.Tasks.forResult(false)
             }
-            batch.commit()
         }.addOnFailureListener {
             if (view != null) android.widget.Toast.makeText(context, "Could not save connection. Rewind and try again.", android.widget.Toast.LENGTH_LONG).show()
         }
@@ -192,14 +201,14 @@ class MainFragment : Fragment(), CardStackListener {
                 val likes = likesRef.get().await()
                 val loaded = ArrayList<User>()
                 for (document in documents) {
-                    if (document.id == auth.uid || likes.contains(document.id)) continue
+                    if (document.id == auth.uid || likes.documents.any { it.id == document.id }) continue
                     var photo = document.getString("pic").orEmpty()
                     if (photo.isBlank()) {
                         photo = try { storageRef.child("users/" + document.id + "/profile.jpg").downloadUrl.await().toString() }
                         catch (e: CancellationException) { throw e }
                         catch (e: Exception) { "android.resource://com.alexjanci.jamr/drawable/defaultpic" }
                     }
-                    loaded.add(User(fname = document.getString("fname") ?: "Member", city = document.getString("city").orEmpty(), age = document.get("age")?.toString().orEmpty(), pic = photo, id = document.id))
+                    loaded.add((document.toObject(User::class.java)).copy(id = document.id, pic = photo))
                 }
                 users.clear()
                 users.addAll(loaded)

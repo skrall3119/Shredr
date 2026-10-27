@@ -26,6 +26,15 @@ class FirebaseFlowTest {
         val stores = apps.map { FirebaseFirestore.getInstance(it) }
         val ids = mutableListOf<String>()
         fun <T> wait(task: com.google.android.gms.tasks.Task<T>): T = Tasks.await(task, 30, TimeUnit.SECONDS)
+        fun denied(task: com.google.android.gms.tasks.Task<*>) {
+            try {
+                wait(task)
+                fail("Expected PERMISSION_DENIED")
+            } catch (e: java.util.concurrent.ExecutionException) {
+                assertEquals(com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED,
+                    (e.cause as? com.google.firebase.firestore.FirebaseFirestoreException)?.code)
+            }
+        }
         try {
             for (i in 0..1) {
                 val email = "shredr-test-$suffix-$i@example.com"
@@ -33,31 +42,38 @@ class FirebaseFlowTest {
                 ids.add(wait(auths[i].createUserWithEmailAndPassword(email, password)).user!!.uid)
                 auths[i].signOut()
                 assertEquals(ids[i], wait(auths[i].signInWithEmailAndPassword(email, password)).user!!.uid)
-                wait(stores[i].collection("users").document(ids[i]).set(mapOf("id" to ids[i], "fname" to "Disposable flow test", "age" to "25", "bio" to "Automated test fixture")))
-                assertEquals("Automated test fixture", wait(stores[i].collection("users").document(ids[i]).get()).getString("bio"))
+                wait(stores[i].collection("public-profiles").document(ids[i]).set(mapOf("id" to ids[i], "fname" to "Disposable flow test", "age" to "25", "bio" to "Automated test fixture")))
+                assertEquals("Automated test fixture", wait(stores[i].collection("public-profiles").document(ids[i]).get()).getString("bio"))
             }
             val a = ids[0]; val b = ids[1]
-            wait(stores[0].collection("user-likes").document(a).set(mapOf(b to b)))
-            wait(stores[1].collection("user-likes").document(b).set(mapOf(a to a)))
+            denied(stores[1].collection("public-profiles").document(a).update("bio", "Unauthorized"))
+            denied(stores[1].collection("users").document(a).get(com.google.firebase.firestore.Source.SERVER))
+            denied(stores[1].collection("user-likes").document(a).collection("likes").get(com.google.firebase.firestore.Source.SERVER))
+            denied(stores[0].collection("user-matches").document(a).collection("matches").document(b).set(User(id=b)))
+            wait(stores[0].collection("user-likes").document(a).collection("likes").document(b).set(mapOf("id" to b)))
+            wait(stores[1].collection("user-likes").document(b).collection("likes").document(a).set(mapOf("id" to a)))
             val batch = stores[0].batch()
-            batch.set(stores[0].collection("user-matches").document(a).collection("matches").document(b), User(fname="Disposable flow test", id=b))
-            batch.set(stores[0].collection("user-matches").document(b).collection("matches").document(a), User(fname="Disposable flow test", id=a))
+            batch.set(stores[0].collection("user-matches").document(a).collection("matches").document(b), User(fname="Disposable flow test", id=b, age="25", bio="Automated test fixture"))
+            batch.set(stores[0].collection("user-matches").document(b).collection("matches").document(a), User(fname="Disposable flow test", id=a, age="25", bio="Automated test fixture"))
             wait(batch.commit())
             val message = ChatLogFragment.ChatMessage(suffix,"Automated test message",a,b,System.currentTimeMillis()/1000)
             wait(stores[0].batch()
                 .set(stores[0].collection("user-messages").document(a).collection(b).document(suffix),message)
                 .set(stores[0].collection("user-messages").document(b).collection(a).document(suffix),message).commit())
             assertEquals(message.text, wait(stores[1].collection("user-messages").document(b).collection(a).document(suffix).get()).getString("text"))
+            denied(stores[1].collection("user-messages").document(a).collection(b).document(suffix).get(com.google.firebase.firestore.Source.SERVER))
+            denied(stores[0].collection("user-messages").document(a).collection(b).document(suffix).update("text", "Altered"))
         } finally {
             for (i in ids.indices) {
                 val own = ids[i]
                 val batch = stores[i].batch()
                 for (other in ids.filter { it != own }) {
+                    batch.delete(stores[i].collection("user-likes").document(own).collection("likes").document(other))
                     batch.delete(stores[i].collection("user-matches").document(own).collection("matches").document(other))
                     batch.delete(stores[i].collection("user-messages").document(own).collection(other).document(suffix))
                 }
                 batch.delete(stores[i].collection("user-likes").document(own))
-                batch.delete(stores[i].collection("users").document(own))
+                batch.delete(stores[i].collection("public-profiles").document(own))
                 wait(batch.commit())
                 auths[i].currentUser?.let { wait(it.delete()) }
             }
