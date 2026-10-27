@@ -63,20 +63,11 @@ The data model uses Firestore collections for `users`, `user-likes`, `user-match
 
 ## Getting started
 
-This repository preserves an earlier Android implementation. Its build configuration uses Kotlin 1.3.72, Android Gradle Plugin 4.1.0, compile/target SDK 30, and minimum SDK 26. The debug build has been verified with JDK 11 and an Android API 30 emulator.
+Open Shredr and choose **Create an account** on the sign-in screen. Register with your email and password, then sign in, add a profile photo and bio, and start discovering other musicians.
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/skrall3119/Shredr.git
-   ```
-2. Open the project in Android Studio and configure a compatible Gradle/JDK environment. Dependencies resolve through Maven Central and scoped JitPack repositories; the Android build plugins remain legacy versions.
-3. Create your own Firebase project and register the Android application ID `com.alexjanci.jamr`.
-4. Enable email/password authentication, Cloud Firestore, and Firebase Storage. Replace `app/google-services.json` with your project's configuration.
-5. Configure Firestore and Storage access rules for the application's authenticated-user flows. Backend rules are not included in this repository.
-6. Optionally populate `city` on test profiles. Missing photos use a bundled fallback image.
-7. Build and run on an Android device or emulator supporting API 26 or later.
+The app already connects to its configured Firebase backend. You do not need to create a Firebase project, connect a Firebase account, or replace any configuration files to try it.
 
-The checked-in Firebase configuration does not guarantee access to a working backend. Use a development project and test accounts.
+If you are running from source, clone this repository, open it in Android Studio, and build and run it on an Android device or emulator supporting API 26 or later. The debug build has been verified with JDK 11 and an API 30 emulator. The project uses Kotlin 1.3.72, Android Gradle Plugin 4.1.0, and compile/target SDK 30, so use a compatible Gradle/JDK environment.
 
 ## Suggested demo
 
