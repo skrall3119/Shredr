@@ -40,7 +40,7 @@ class Messages : Fragment() {
         return inflater.inflate(R.layout.fragment_messages, container, false)
     }
 
-    private lateinit var documentListener: ListenerRegistration
+    private var documentListener: ListenerRegistration? = null
 
     override fun onStart() {
         super.onStart()
@@ -53,8 +53,9 @@ class Messages : Fragment() {
     }
 
     private fun fetchUsers() {
+        val uid = auth.uid ?: return
         val documentReference =
-            FirebaseFirestore.getInstance().collection("user-matches").document(auth.uid!!).collection("matches")
+            FirebaseFirestore.getInstance().collection("user-matches").document(uid).collection("matches")
         documentListener = documentReference.addSnapshotListener { value, error ->
             if (view == null) return@addSnapshotListener
             messageStatus.visibility = if (value == null || value.isEmpty) View.VISIBLE else View.GONE
@@ -68,12 +69,8 @@ class Messages : Fragment() {
                 val user = it.toObject(User::class.java)
                 val id = it.id
 
-                if (id != auth.currentUser!!.uid) {
-                    FirebaseStorage.getInstance().getReference()
-                        .child("users/$id/profile.jpg").downloadUrl.addOnSuccessListener {
-                            val message = UserMessage(user.fname, it.toString(), user.id)
-                            adapter.add(message)
-                        }
+                if (id != uid) {
+                    adapter.add(UserMessage(user.fname, user.pic, id))
                 }
             }
 
@@ -83,6 +80,7 @@ class Messages : Fragment() {
 
                 val bundle = Bundle()
                 bundle.putString("id", userItem.id)
+                bundle.putString("name", userItem.name)
                 bundle.putString("uri", userItem.uri)
 
                 val chatLogFragment = ChatLogFragment.newInstance()
@@ -100,7 +98,7 @@ class Messages : Fragment() {
 
     override fun onStop() {
         super.onStop()
-        documentListener.remove()
+        documentListener?.remove()
     }
 
     companion object {
@@ -111,7 +109,7 @@ class Messages : Fragment() {
 class UserMessage(val name: String, val uri: String, val id: String) : Item<GroupieViewHolder>() {
     override fun bind(viewHolder: GroupieViewHolder, position: Int) {
         viewHolder.itemView.userName.text = name
-        Picasso.get().load(uri).into(viewHolder.itemView.userImage)
+        Picasso.get().load(uri.ifBlank { "android.resource://com.alexjanci.jamr/drawable/defaultpic" }).placeholder(R.drawable.defaultpic).error(R.drawable.defaultpic).into(viewHolder.itemView.userImage)
     }
 
     override fun getLayout(): Int {

@@ -25,7 +25,7 @@ import kotlin.collections.ArrayList
 class ChatLogFragment : Fragment() {
 
     val auth = FirebaseAuth.getInstance()
-    val uid = auth.currentUser!!.uid
+    val uid get() = auth.uid.orEmpty()
 
     val TAG = "ChatLog"
 
@@ -44,7 +44,17 @@ class ChatLogFragment : Fragment() {
 
         recyclerview_chat_log.adapter = adapter
 
-        listenForMessages()
+        (activity as? androidx.appcompat.app.AppCompatActivity)?.supportActionBar?.title =
+            arguments?.getString("name") ?: "Conversation"
+        val ownId = auth.uid ?: return
+        FirebaseFirestore.getInstance().collection("users").document(ownId).get()
+            .addOnCompleteListener { task ->
+                if (view != null && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+                    val photo = if (task.isSuccessful) task.result?.getString("pic") else null
+                    listenForMessages(photo?.takeIf { it.isNotBlank() }
+                        ?: "android.resource://com.alexjanci.jamr/drawable/defaultpic")
+                }
+            }
 
         send_button.setOnClickListener {
             performSendMessage()
@@ -53,15 +63,20 @@ class ChatLogFragment : Fragment() {
 
     var messageListener: ListenerRegistration? = null
 
-    private fun listenForMessages() {
+    private fun listenForMessages(fromUri: String) {
         val fromId = auth.uid
         val toId: String? = arguments?.getString("id")
-        val fromUri = FirebaseStorage.getInstance()
-            .getReference("/users/$uid/profile.jpg").downloadUrl.toString()
+
+        if (fromId == null || toId.isNullOrBlank()) return
 
         val ref = FirebaseFirestore.getInstance().collection("user-messages").document("$fromId")
             .collection("$toId")
         messageListener = ref.addSnapshotListener { value, error ->
+            if (view == null) return@addSnapshotListener
+            if (error != null || value == null) {
+                android.widget.Toast.makeText(context, "Unable to load messages. Please reopen this conversation.", android.widget.Toast.LENGTH_LONG).show()
+                return@addSnapshotListener
+            }
             adapter.clear()
             val messages = ArrayList<ChatMessage>()
             value!!.forEach {
@@ -98,10 +113,12 @@ class ChatLogFragment : Fragment() {
     }
 
     private fun performSendMessage() {
-        val text = messageText.text.toString()
+        val draft = messageText.text.toString()
+        val text = draft.trim()
+        if (text.isBlank() || auth.uid == null) return
 
         val fromId = uid
-        val toId: String? = arguments?.getString("id")
+        val toId = arguments?.getString("id")?.takeIf { it.isNotBlank() } ?: return
 
         val reference =
             FirebaseFirestore.getInstance().collection("user-messages").document("$fromId")
@@ -111,14 +128,21 @@ class ChatLogFragment : Fragment() {
             FirebaseFirestore.getInstance().collection("user-messages").document("$toId")
                 .collection(
                     "$fromId"
-                ).document()
+                ).document(reference.id)
         val chatMessage =
             ChatMessage(reference.id, text, fromId, toId!!, System.currentTimeMillis() / 1000)
-        reference.set(chatMessage)
-        toReference.set(chatMessage)
-
-        messageText.setText("")
-        recyclerview_chat_log.scrollToPosition(adapter.itemCount - 1)
+        send_button.isEnabled = false
+        FirebaseFirestore.getInstance().batch().set(reference, chatMessage)
+            .set(toReference, chatMessage).commit().addOnCompleteListener { task ->
+                if (view == null) return@addOnCompleteListener
+                send_button.isEnabled = true
+                if (task.isSuccessful) {
+                    if (messageText.text.toString() == draft) messageText.setText("")
+                    if (adapter.itemCount > 0) recyclerview_chat_log.scrollToPosition(adapter.itemCount - 1)
+                } else {
+                    android.widget.Toast.makeText(context, "Message not sent. Your draft is still here; please try again.", android.widget.Toast.LENGTH_LONG).show()
+                }
+            }
     }
 
     companion object {
@@ -131,7 +155,7 @@ class ChatFromItem(val text: String, val uri: Uri) : Item<GroupieViewHolder>() {
         viewHolder.itemView.textViewFrom.text = text
 
         val targetImageView = viewHolder.itemView.imageViewFrom
-        Picasso.get().load(uri).into(targetImageView)
+        Picasso.get().load(uri).placeholder(R.drawable.defaultpic).error(R.drawable.defaultpic).into(targetImageView)
     }
 
     override fun getLayout(): Int {
@@ -144,7 +168,7 @@ class ChatToItem(val text: String, val uri: Uri) : Item<GroupieViewHolder>() {
         viewHolder.itemView.textViewTo.text = text
 
         val targetImageView = viewHolder.itemView.imageViewTo
-        Picasso.get().load(uri).into(targetImageView)
+        Picasso.get().load(uri).placeholder(R.drawable.defaultpic).error(R.drawable.defaultpic).into(targetImageView)
     }
 
     override fun getLayout(): Int {

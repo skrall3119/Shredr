@@ -21,7 +21,10 @@ import kotlinx.android.synthetic.main.fragment_main.*
 import kotlinx.android.synthetic.main.item.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.Main
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -34,6 +37,7 @@ class MainFragment : Fragment(), CardStackListener {
     private lateinit var adapter: CardStackAdapter
     private val users = ArrayList<User>()
     private lateinit var userMe: User
+    private var loadJob: Job? = null
 
     private val store = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
@@ -55,10 +59,6 @@ class MainFragment : Fragment(), CardStackListener {
         createList()
         setupButton()
 
-        val user = myRef.get()
-        user.addOnSuccessListener {
-            userMe = it.toObject(User::class.java)!!
-        }
     }
 
     private fun initialize(list: List<User>){
@@ -95,22 +95,26 @@ class MainFragment : Fragment(), CardStackListener {
     }
 
     override fun onCardSwiped(direction: Direction) {
-        if(direction == Direction.Right){
-            val likedID = users[manager.topPosition - 1].id
-            val data = hashMapOf(likedID to likedID)
-            likesRef.set(data, SetOptions.merge()).addOnSuccessListener {
-                val likedRef = store.collection("user-likes").document(likedID).get().addOnSuccessListener {
-                    if (it.data != null && it.data!!.contains("${auth.uid}")){
-                        val matchedRef = store.collection("user-matches").document("${auth.uid}").collection("matches").document(likedID)
-                        val matchedRef2 = store.collection("user-matches").document(likedID).collection("matches").document("${auth.uid}")
-
-                        val matchedUser = users[manager.topPosition - 1]
-
-                        matchedRef.set(matchedUser)
-                        matchedRef2.set(userMe)
-                    }
-                }
+        val matchedUser = users.getOrNull(manager.topPosition - 1) ?: return
+        if (manager.topPosition >= users.size) {
+            discoveryStatus.visibility = View.VISIBLE
+        }
+        if (direction != Direction.Right || !::userMe.isInitialized) return
+        val uid = auth.uid ?: return
+        val likedID = matchedUser.id
+        likesRef.set(mapOf(likedID to likedID), SetOptions.merge()).continueWithTask { saved ->
+            if (!saved.isSuccessful) throw saved.exception ?: IllegalStateException("Like failed")
+            store.collection("user-likes").document(likedID).get()
+        }.continueWithTask { liked ->
+            val snapshot = liked.result ?: throw IllegalStateException("Like unavailable")
+            val batch = store.batch()
+            if (snapshot.contains(uid)) {
+                batch.set(store.collection("user-matches").document(uid).collection("matches").document(likedID), matchedUser)
+                batch.set(store.collection("user-matches").document(likedID).collection("matches").document(uid), userMe)
             }
+            batch.commit()
+        }.addOnFailureListener {
+            if (view != null) android.widget.Toast.makeText(context, "Could not save connection. Rewind and try again.", android.widget.Toast.LENGTH_LONG).show()
         }
     }
 
@@ -167,53 +171,48 @@ class MainFragment : Fragment(), CardStackListener {
         }
     }
 
-    private fun createList(){
-        button_container.visibility = View.INVISIBLE
-        GlobalScope.launch(Dispatchers.IO) {
-          try {
-            users.clear()
-            val defaultRef = storageRef.child("users/default/default.png")
-            val documents = documentReference.get().await()
-            val likes = likesRef.get().await()
-            for(document in documents){
-                val userID = document.id
-                if (userID != auth.currentUser!!.uid) {
-                    if(document.id != likes[userID]){
-                        var uri: Uri
-                        val profileRef = storageRef.child("users/$userID/profile.jpg")
-
-                        try {
-                            uri = profileRef.downloadUrl.await()
-                        } catch (e: Exception) {
-                            uri = defaultRef.downloadUrl.await()
-                        }
-                        val name = document.data.getValue("fname").toString()
-                        val city = document.getString("city") ?: ""
-                        val age = document.data.getValue("age").toString()
-                        users.add(User(fname = name, city = city, age = age, pic = uri.toString(), id = userID))
-                    }
-                }
-            }
-            withContext(Main){
-                try {
-                    if (childFragmentManager.isDestroyed) {
-                    } else {
-                        try {
-                            initialize(users)
-                        } catch (e: Exception) {
-                        }
-                    }
-                } catch (e: Exception){
-                }
-            }
-          } catch (e: Exception) {
-              withContext(Main) {
-                  view?.findViewById<android.widget.TextView>(R.id.discoveryStatus)?.text =
-                      "Couldn’t load profiles.\nCheck your connection and try again."
-              }
-          }
-        }
-
+    override fun onStop() {
+        loadJob?.cancel()
+        super.onStop()
     }
 
+    private fun createList() {
+        button_container.visibility = View.INVISIBLE
+        discoveryStatus.visibility = View.VISIBLE
+        discoveryStatus.text = "Loading profiles…"
+        loadJob?.cancel()
+        loadJob = CoroutineScope(Dispatchers.Main).launch {
+            try {
+                val own = myRef.get().await()
+                userMe = own.toObject(User::class.java) ?: throw IllegalStateException("Profile missing")
+                // Demo accounts only discover other accounts in their demo session.
+                val demoGroup = own.getString("demoGroup")
+                val documents = if (demoGroup.isNullOrBlank()) documentReference.get().await()
+                    else documentReference.whereEqualTo("demoGroup", demoGroup).get().await()
+                val likes = likesRef.get().await()
+                val loaded = ArrayList<User>()
+                for (document in documents) {
+                    if (document.id == auth.uid || likes.contains(document.id)) continue
+                    var photo = document.getString("pic").orEmpty()
+                    if (photo.isBlank()) {
+                        photo = try { storageRef.child("users/" + document.id + "/profile.jpg").downloadUrl.await().toString() }
+                        catch (e: CancellationException) { throw e }
+                        catch (e: Exception) { "android.resource://com.alexjanci.jamr/drawable/defaultpic" }
+                    }
+                    loaded.add(User(fname = document.getString("fname") ?: "Member", city = document.getString("city").orEmpty(), age = document.get("age")?.toString().orEmpty(), pic = photo, id = document.id))
+                }
+                users.clear()
+                users.addAll(loaded)
+                initialize(users)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (view != null) {
+                    discoveryStatus.visibility = View.VISIBLE
+                    discoveryStatus.text = "Couldn’t load profiles.\nTap here to retry."
+                    discoveryStatus.setOnClickListener { createList() }
+                }
+            }
+        }
+    }
 }

@@ -46,6 +46,7 @@ class SignUp : AppCompatActivity() {
         if(fAuth.currentUser != null){
             startActivity(Intent(this, MainActivity::class.java))
             finish()
+            return
         }
 
         editTextDate.setOnFocusChangeListener { v, hasFocus ->
@@ -59,9 +60,9 @@ class SignUp : AppCompatActivity() {
                 val day = c.get(Calendar.DAY_OF_MONTH)
 
                 val dpd = DatePickerDialog(this, { view, year, month, dayOfMonth ->
-                    val text = "" + dayOfMonth + "" + (month + 1) + "" + year
+                    val text = "%02d/%02d/%04d".format(month + 1, dayOfMonth, year)
                     editTextDate.setText(text)
-                    age = curYear - year
+                    age = curYear - year - if (month > curMonth || (month == curMonth && dayOfMonth > day)) 1 else 0
                 }, curYear, curMonth, day)
                 dpd.show()
             }
@@ -70,12 +71,15 @@ class SignUp : AppCompatActivity() {
 
         registerButton.setOnClickListener {
             val email:String = editTextRegEmail.text.toString().trim()
-            val password:String = editTextPassword.text.toString().trim()
-            val confirmPass: String = editTextConfirmPassword.text.toString().trim()
+            val password:String = editTextPassword.text.toString()
+            val confirmPass: String = editTextConfirmPassword.text.toString()
             val name: String = editTextName.text.toString().trim()
             val birthDate: String = editTextDate.text.toString().trim()
 
-            if (TextUtils.isEmpty(email)){
+            if (name.isBlank()) {
+                editTextName.error = "Name is required"
+            }
+            else if (TextUtils.isEmpty(email)){
                 editTextRegEmail.error = "Email is required"
             }
 
@@ -98,6 +102,7 @@ class SignUp : AppCompatActivity() {
             }
 
             else {
+                registerButton.isEnabled = false
                 fAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(this) {task ->
                     if(task.isSuccessful){
                         Toast.makeText(this, "User Created.", Toast.LENGTH_SHORT).show()
@@ -108,28 +113,34 @@ class SignUp : AppCompatActivity() {
                         user.put("email",email)
                         user.put("age", age.toString())
                         user.put("id", userID)
-                        uploadDefaultImageToFirebase()
+
                         documentReference.set(user).addOnSuccessListener {
-                        }
                         val intent = Intent(this, MainActivity::class.java)
                         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK.or(Intent.FLAG_ACTIVITY_NEW_TASK)
                         startActivity(intent)
+                        finish()
+                        }.addOnFailureListener {
+                            registerButton.isEnabled = true
+                            registerButton.text = "Retry profile setup"
+                            registerButton.setOnClickListener {
+                                registerButton.isEnabled = false
+                                documentReference.set(user).addOnCompleteListener { saved ->
+                                    registerButton.isEnabled = true
+                                    if (saved.isSuccessful) {
+                                        startActivity(Intent(this, MainActivity::class.java))
+                                        finish()
+                                    } else Toast.makeText(this, "Profile could not save. Please retry.", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                            Toast.makeText(this, "Account created, but profile could not save. Retry setup.", Toast.LENGTH_LONG).show()
+                        }
                     } else {
+                        registerButton.isEnabled = true
                         Toast.makeText(this, "Error! " + task.exception!!.message.toString(), Toast.LENGTH_LONG).show()
                     }
                 }
             }
 
-        }
-    }
-
-    private fun uploadDefaultImageToFirebase() {
-        val storageRef = Firebase.storage.reference
-        val fileRef = storageRef.child("users/$userID/profile.jpg")
-        val uri = Uri.parse("android.resource://com.alexjanci.jamr/drawable/defaultpic")
-        fileRef.putFile(uri).addOnSuccessListener {
-        }.addOnFailureListener {
-            Toast.makeText(this, "Failed", Toast.LENGTH_SHORT).show()
         }
     }
 

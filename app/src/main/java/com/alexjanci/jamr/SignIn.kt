@@ -32,7 +32,7 @@ class SignIn : AppCompatActivity() {
 
         buttonSignIn.setOnClickListener {
             val email:String = loginEmail.text.toString().trim()
-            val password:String = loginPass.text.toString().trim()
+            val password:String = loginPass.text.toString()
 
             if (TextUtils.isEmpty(email)){
                 loginEmail.error = "Email is required"

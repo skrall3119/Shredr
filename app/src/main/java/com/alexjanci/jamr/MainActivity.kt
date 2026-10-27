@@ -65,6 +65,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (auth.currentUser == null) {
+            startActivity(Intent(this, SignIn::class.java))
+            finish()
+            return
+        }
         setContentView(R.layout.activity_main)
         setSupportActionBar(findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar))
 
@@ -78,9 +83,10 @@ class MainActivity : AppCompatActivity() {
 
         toolbar.title = "Discover"
 
-        transaction.replace(R.id.container, defaultFragment);
-        transaction.addToBackStack(null);
-        transaction.commit()
+        if (savedInstanceState == null) {
+            transaction.replace(R.id.container, defaultFragment)
+            transaction.commit()
+        }
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
         getLastLocation()
@@ -91,6 +97,7 @@ class MainActivity : AppCompatActivity() {
         if(checkPermission()){
             if(isLocationEnabled()){
                 fusedLocationProviderClient.lastLocation.addOnCompleteListener {
+                    if (!it.isSuccessful) return@addOnCompleteListener
                     val location = it.result
                     if(location == null){
                         getNewLocation()
@@ -130,24 +137,30 @@ class MainActivity : AppCompatActivity() {
 
     private val locationCallback = object: LocationCallback(){
         override fun onLocationResult(p0: LocationResult?) {
-            val lastLocation = p0!!.lastLocation
+            val lastLocation = p0?.lastLocation ?: return
             saveLocationToDatabase(lastLocation)
         }
     }
 
     private fun saveLocationToDatabase(location: Location){
-        val firebaseUser = auth.currentUser!!
-        val geocoder = Geocoder(this, Locale.getDefault())
+        val uid = auth.uid ?: return
+        Thread {
+            val city = try {
+                Geocoder(this, Locale.getDefault()).getFromLocation(location.latitude, location.longitude, 1)?.firstOrNull()?.locality
+            } catch (e: Exception) { null }
+            if (city.isNullOrBlank()) return@Thread
+            runOnUiThread {
+                if (!isFinishing && auth.uid == uid) {
+                    store.collection("users").document(uid).set(mapOf("city" to city), SetOptions.merge())
+                        .addOnFailureListener { Log.w("Shredr", "Could not save city", it) }
+                }
+            }
+        }.start()
+    }
 
-        val lat = location.latitude
-        val long = location.longitude
-
-        val addresses: List<Address> = geocoder.getFromLocation(lat, long, 1)
-        val cityName: String = addresses[0].locality
-
-        val data = hashMapOf("latitude" to lat, "longitude" to long, "city" to cityName)
-        val docRef = store.collection("users").document(firebaseUser.uid)
-        docRef.set(data, SetOptions.merge())
+    override fun onStop() {
+        if (::fusedLocationProviderClient.isInitialized) fusedLocationProviderClient.removeLocationUpdates(locationCallback)
+        super.onStop()
     }
 
     override fun onRequestPermissionsResult(
@@ -155,8 +168,10 @@ class MainActivity : AppCompatActivity() {
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if(requestCode == PERMISSION_REQUEST){
             if(grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                getLastLocation()
             }
         }
     }

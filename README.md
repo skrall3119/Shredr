@@ -6,6 +6,27 @@ Shredr brings account creation, profile discovery, mutual matching, and messagin
 
 The project demonstrates integration across mobile UI, asynchronous data access, authentication, cloud storage, and event-driven updates.
 
+## Screenshots
+
+Captured from the running Android app on an API 30 emulator. Profiles, artwork, and conversations use fictional demo accounts; no real user content is shown.
+
+| Discover musicians | Edit your profile | Your connections |
+| --- | --- | --- |
+| <img src="docs/screenshots/discover.png" width="240" alt="Swipeable musician discovery cards"> | <img src="docs/screenshots/profile.png" width="240" alt="Editable profile with uploaded photo and bio"> | <img src="docs/screenshots/connections.png" width="240" alt="Mutual matches ready for conversation"> |
+
+| Conversation | Sign in | Create an account |
+| --- | --- | --- |
+| <img src="docs/screenshots/conversation.png" width="240" alt="Firebase-backed demo conversation"> | <img src="docs/screenshots/sign-in.png" width="240" alt="Shredr sign-in screen"> | <img src="docs/screenshots/create-account.png" width="240" alt="Account registration form"> |
+
+<details>
+<summary>Gallery selection and profile editing</summary>
+
+| Choose a photo | Save a bio |
+| --- | --- |
+| <img src="docs/screenshots/gallery.png" width="240" alt="Android gallery picker with generated demo artwork"> | <img src="docs/screenshots/edit-profile.png" width="240" alt="Profile bio editor and save action"> |
+
+</details>
+
 ## Features
 
 - **Account registration and sign-in** using Firebase Authentication, with form validation.
@@ -42,17 +63,17 @@ The data model uses Firestore collections for `users`, `user-likes`, `user-match
 
 ## Getting started
 
-This repository preserves an earlier Android implementation. Its build configuration uses Kotlin 1.3.72, Android Gradle Plugin 4.1.0, compile/target SDK 30, and minimum SDK 26. Compatibility with current tooling has not been verified.
+This repository preserves an earlier Android implementation. Its build configuration uses Kotlin 1.3.72, Android Gradle Plugin 4.1.0, compile/target SDK 30, and minimum SDK 26. The debug build has been verified with JDK 11 and an Android API 30 emulator.
 
 1. Clone the repository:
    ```bash
    git clone https://github.com/skrall3119/Shredr.git
    ```
-2. Open the project in Android Studio and configure a compatible Gradle/JDK environment. The existing build references JCenter and older dependencies; dependency or tooling migration may be necessary.
+2. Open the project in Android Studio and configure a compatible Gradle/JDK environment. Dependencies resolve through Maven Central and scoped JitPack repositories; the Android build plugins remain legacy versions.
 3. Create your own Firebase project and register the Android application ID `com.alexjanci.jamr`.
 4. Enable email/password authentication, Cloud Firestore, and Firebase Storage. Replace `app/google-services.json` with your project's configuration.
 5. Configure Firestore and Storage access rules for the application's authenticated-user flows. Backend rules are not included in this repository.
-6. Add a fallback profile image at `users/default/default.png` in Storage. Populate the `city` field on test-user documents; discovery expects it, but registration does not currently collect it.
+6. Optionally populate `city` on test profiles. Missing photos use a bundled fallback image.
 7. Build and run on an Android device or emulator supporting API 26 or later.
 
 The checked-in Firebase configuration does not guarantee access to a working backend. Use a development project and test accounts.
@@ -63,15 +84,14 @@ With two test accounts, complete the profile data, browse discovery cards, like 
 
 ## Project status and next steps
 
-Shredr is a portfolio prototype. The source contains the features described above; a current end-to-end build and backend run have not been verified for this documentation.
+Shredr is a portfolio prototype. The debug build and isolated live Firebase tests have passed for authentication, profile persistence, matching, mirrored messages, photo uploads, and downloads. See [verification notes](FIREBASE-VERIFICATION.md) for scope and remaining limitations.
 
 Priorities for continued development:
 
 - Migrate synthetic view access and older build dependencies.
-- Replace global coroutine scopes with lifecycle-aware work.
 - Improve loading, empty, and failure states, and remove unsafe null assumptions.
-- Make matching and message writes more resilient to partial failures.
-- Add feature-specific tests and version-controlled backend rules; existing test files are starter examples.
+- Add offline recovery and retry coverage beyond the current atomic match/message writes.
+- Harden and version-control backend security rules before public release. Live Firebase tests are opt-in and use disposable fixtures.
 
 ## Author
 
