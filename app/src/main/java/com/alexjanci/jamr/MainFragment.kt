@@ -62,6 +62,9 @@ class MainFragment : Fragment(), CardStackListener {
     }
 
     private fun initialize(list: List<User>){
+        discoveryStatus.text = "You’re all caught up.\nNew connections will appear here."
+        discoveryStatus.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
+        button_container.visibility = if (list.isEmpty()) View.INVISIBLE else View.VISIBLE
         manager.setStackFrom(StackFrom.None)
         manager.setVisibleCount(3)
         manager.setTranslationInterval(8.0f)
@@ -165,8 +168,10 @@ class MainFragment : Fragment(), CardStackListener {
     }
 
     private fun createList(){
+        button_container.visibility = View.INVISIBLE
         GlobalScope.launch(Dispatchers.IO) {
-
+          try {
+            users.clear()
             val defaultRef = storageRef.child("users/default/default.png")
             val documents = documentReference.get().await()
             val likes = likesRef.get().await()
@@ -183,7 +188,7 @@ class MainFragment : Fragment(), CardStackListener {
                             uri = defaultRef.downloadUrl.await()
                         }
                         val name = document.data.getValue("fname").toString()
-                        val city = document.data.getValue("city").toString()
+                        val city = document.getString("city") ?: ""
                         val age = document.data.getValue("age").toString()
                         users.add(User(fname = name, city = city, age = age, pic = uri.toString(), id = userID))
                     }
@@ -201,6 +206,12 @@ class MainFragment : Fragment(), CardStackListener {
                 } catch (e: Exception){
                 }
             }
+          } catch (e: Exception) {
+              withContext(Main) {
+                  view?.findViewById<android.widget.TextView>(R.id.discoveryStatus)?.text =
+                      "Couldn’t load profiles.\nCheck your connection and try again."
+              }
+          }
         }
 
     }

@@ -66,9 +66,11 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        setSupportActionBar(findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar))
 
         toolbar = supportActionBar!!
         val bottomNavigation: BottomNavigationView = navigation_view
+        bottomNavigation.selectedItemId = R.id.navigation_main
         bottomNavigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
 
         val transaction = supportFragmentManager.beginTransaction()

@@ -1,112 +1,22 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/sign_up"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".SignUp">
-
-
-    <TextView
-        android:id="@+id/textView2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="19dp"
-        android:fontFamily="sans-serif-condensed-light"
-        android:text="@string/sign_up_for_jamr"
-        android:textSize="30sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <EditText
-        android:id="@+id/editTextName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="40dp"
-        android:ems="10"
-        android:fontFamily="sans-serif-condensed-light"
-        android:hint="@string/full_name"
-        android:importantForAutofill="no"
-        android:inputType="textPersonName"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView2" />
-
-    <EditText
-        android:id="@+id/editTextRegEmail"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="4dp"
-        android:ems="10"
-        android:fontFamily="sans-serif-condensed-light"
-        android:hint="@string/email_address"
-        android:importantForAutofill="no"
-        android:inputType="textEmailAddress"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.481"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editTextName" />
-
-    <EditText
-        android:id="@+id/editTextPassword"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:ems="10"
-        android:fontFamily="sans-serif-condensed-light"
-        android:hint="@string/password"
-        android:importantForAutofill="no"
-        android:inputType="textPassword"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editTextRegEmail" />
-
-    <EditText
-        android:id="@+id/editTextConfirmPassword"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:ems="10"
-        android:fontFamily="sans-serif-condensed-light"
-        android:hint="@string/confirm_password"
-        android:importantForAutofill="no"
-        android:inputType="textPassword"
-        app:layout_constraintBottom_toTopOf="@+id/registerButton"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editTextPassword"
-        app:layout_constraintVertical_bias="0.0" />
-
-    <Button
-        android:id="@+id/registerButton"
-        android:layout_width="257dp"
-        android:layout_height="59dp"
-        android:layout_marginBottom="16dp"
-        android:fontFamily="sans-serif-condensed-light"
-        android:text="@string/sign_up"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-
-    <EditText
-        android:id="@+id/editTextDate"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:ems="10"
-        android:inputType="none"
-        app:layout_constraintBottom_toTopOf="@+id/registerButton"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.502"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editTextConfirmPassword"
-        app:layout_constraintVertical_bias="0.0" />
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="28dp" android:focusableInTouchMode="true">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="36dp">
+            <ImageView android:layout_width="48dp" android:layout_height="48dp" android:src="@drawable/brand_mark" android:contentDescription="Shredr" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:text="shredr" android:textSize="26sp" android:fontFamily="sans-serif-black" android:textColor="@color/white" />
+        </LinearLayout>
+        <TextView style="@style/Title" android:text="Meet your next&#xA;connection." />
+        <TextView style="@style/Body" android:text="Start with the basics. Make it yours later." />
+        <TextView style="@style/Label" android:text="Your name" />
+        <EditText android:id="@+id/editTextName" style="@style/Field" android:hint="Full name" android:inputType="textPersonName" android:autofillHints="name" />
+        <TextView style="@style/Label" android:text="Email address" />
+        <EditText android:id="@+id/editTextRegEmail" style="@style/Field" android:hint="you@example.com" android:inputType="textEmailAddress" android:autofillHints="emailAddress" />
+        <TextView style="@style/Label" android:text="Password" />
+        <EditText android:id="@+id/editTextPassword" style="@style/Field" android:hint="At least 6 characters" android:inputType="textPassword" android:autofillHints="newPassword" />
+        <TextView style="@style/Label" android:text="Confirm password" />
+        <EditText android:id="@+id/editTextConfirmPassword" style="@style/Field" android:hint="Repeat your password" android:inputType="textPassword" android:autofillHints="newPassword" />
+        <TextView style="@style/Label" android:text="Date of birth · 18+" />
+        <EditText android:id="@+id/editTextDate" style="@style/Field" android:hint="Choose your date of birth" android:inputType="none" android:autofillHints="" />
+        <androidx.appcompat.widget.AppCompatButton android:id="@+id/registerButton" style="@style/PrimaryButton" android:text="Create account  →" />
+    </LinearLayout>
+</ScrollView>

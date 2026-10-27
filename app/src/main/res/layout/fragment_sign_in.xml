@@ -1,69 +1,18 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".SignIn">
-
-    <Button
-        android:id="@+id/buttonSignIn"
-        style="@style/Widget.AppCompat.Button"
-        android:layout_width="196dp"
-        android:layout_height="0dp"
-        android:layout_marginBottom="204dp"
-        android:fontFamily="sans-serif-condensed-light"
-        android:text="@string/sign_in"
-        android:textAppearance="@style/TextAppearance.AppCompat.Large"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.497"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <Button
-        android:id="@+id/buttonSignUp"
-        android:layout_width="196dp"
-        android:layout_height="47dp"
-        android:layout_marginTop="14dp"
-        android:layout_marginBottom="144dp"
-        android:fontFamily="sans-serif-condensed-light"
-        android:text="@string/sign_up"
-        android:textAppearance="@style/TextAppearance.AppCompat.Large"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.497"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/buttonSignIn" />
-
-    <EditText
-        android:id="@+id/loginEmail"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="153dp"
-        android:layout_marginBottom="282dp"
-        android:ems="10"
-        android:layout_margin="16dp"
-        android:hint="@string/user_email_com"
-        android:inputType="textEmailAddress"
-        app:layout_constraintBottom_toTopOf="@+id/buttonSignIn"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:autofillHints="" />
-
-    <EditText
-        android:id="@+id/loginPass"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:autofillHints=""
-        android:padding="10dp"
-        android:layout_margin="16dp"
-        android:ems="10"
-        android:hint="@string/password"
-        android:inputType="textPassword"
-        app:layout_constraintBottom_toTopOf="@+id/buttonSignIn"
-        app:layout_constraintTop_toBottomOf="@+id/loginEmail"
-        app:layout_constraintVertical_bias="0.0"
-        tools:layout_editor_absoluteX="100dp" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="28dp" android:focusableInTouchMode="true">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="36dp">
+            <ImageView android:layout_width="48dp" android:layout_height="48dp" android:src="@drawable/brand_mark" android:contentDescription="Shredr" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:text="shredr" android:textSize="26sp" android:fontFamily="sans-serif-black" android:textColor="@color/white" />
+        </LinearLayout>
+        <TextView style="@style/Title" android:text="Good connections.&#xA;Great beginnings." />
+        <TextView style="@style/Body" android:text="Find your people. Pick up the conversation." />
+        <TextView style="@style/Label" android:text="Email address" />
+        <EditText android:id="@+id/loginEmail" style="@style/Field" android:hint="you@example.com" android:inputType="textEmailAddress" android:autofillHints="emailAddress" />
+        <TextView style="@style/Label" android:text="Password" />
+        <EditText android:id="@+id/loginPass" style="@style/Field" android:hint="Enter your password" android:inputType="textPassword" android:autofillHints="password" />
+        <androidx.appcompat.widget.AppCompatButton android:id="@+id/buttonSignIn" style="@style/PrimaryButton" android:text="Sign in  →" />
+        <androidx.appcompat.widget.AppCompatButton android:id="@+id/buttonSignUp" style="@style/SecondaryButton" android:text="Create an account" />
+        <TextView style="@style/Body" android:layout_marginTop="28dp" android:gravity="center" android:text="A little spark starts here." />
+    </LinearLayout>
+</ScrollView>

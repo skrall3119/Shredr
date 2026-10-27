@@ -42,14 +42,14 @@ dependencies {
     implementation 'com.google.firebase:firebase-firestore:22.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.1.0'
     implementation 'com.google.android.material:material:1.2.1'
-    implementation "com.yuyakaido.android:card-stack-view:${LatestVersion}"
+    implementation "com.github.yuyakaido:CardStackView:${LatestVersion}"
     implementation 'com.makeramen:roundedimageview:2.3.0'
     implementation 'com.squareup.picasso:picasso:2.71828'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     implementation platform('com.google.firebase:firebase-bom:26.1.0')
     implementation 'com.google.firebase:firebase-storage-ktx'
-    implementation "com.xwray:groupie:2.8.1"
+    implementation "com.github.lisawray.groupie:groupie:2.8.1"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.2.1"
     implementation 'com.google.firebase:firebase-database-ktx:19.5.1'
     implementation 'com.google.android.gms:play-services-location:17.1.0'

@@ -43,7 +43,11 @@ class SignIn : AppCompatActivity() {
             }
 
             else {
+                buttonSignIn.isEnabled = false
+                buttonSignIn.text = "Signing in…"
                 fAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener { task ->
+                    buttonSignIn.isEnabled = true
+                    buttonSignIn.text = "Sign in  →"
                     if (task.isSuccessful){
                         Toast.makeText(this, "User Signed In.", Toast.LENGTH_SHORT).show()
                         startActivity(Intent(this, MainActivity::class.java))

@@ -55,11 +55,16 @@ class Messages : Fragment() {
     private fun fetchUsers() {
         val documentReference =
             FirebaseFirestore.getInstance().collection("user-matches").document(auth.uid!!).collection("matches")
-        documentListener = documentReference.addSnapshotListener { value, _ ->
+        documentListener = documentReference.addSnapshotListener { value, error ->
+            if (view == null) return@addSnapshotListener
+            messageStatus.visibility = if (value == null || value.isEmpty) View.VISIBLE else View.GONE
+            messageStatus.text = if (error != null) "Unable to load connections. Please try again." else
+                "Your next conversation starts with a match.\nExplore Discover to find your people."
+            if (value == null) return@addSnapshotListener
 
             val adapter = GroupAdapter<GroupieViewHolder>()
 
-            value!!.forEach {
+            value.forEach {
                 val user = it.toObject(User::class.java)
                 val id = it.id
 
